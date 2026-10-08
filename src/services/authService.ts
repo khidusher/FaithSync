@@ -1,7 +1,9 @@
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   onAuthStateChanged,
   sendPasswordResetEmail,
+  signInWithPopup,
   signInWithEmailAndPassword,
   signOut,
   type User as FirebaseUser
@@ -37,6 +39,14 @@ export const subscribeToAuthState = (callback: (user: User | null) => void) => {
 export async function signInWithEmail(email: string, password: string) {
   const { auth } = requireFirebase();
   await signInWithEmailAndPassword(auth, email.trim(), password);
+}
+
+export async function signInWithGoogle() {
+  const { auth } = requireFirebase();
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  const credential = await signInWithPopup(auth, provider);
+  await loadOrCreateProfile(credential.user);
 }
 
 export async function registerAccount(input: NewAccount) {
@@ -113,14 +123,16 @@ async function loadOrCreateProfile(firebaseUser: FirebaseUser): Promise<User> {
     await new Promise(resolve => window.setTimeout(resolve, 150));
   }
   const emailName = (firebaseUser.email || 'friend').split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '') || 'friend';
+  const username = `${emailName.slice(0, 12)}_${firebaseUser.uid.slice(-6).toLowerCase()}`;
+  const nameParts = (firebaseUser.displayName || emailName).trim().split(/\s+/);
   const profile = {
     uid: firebaseUser.uid,
-    username: emailName,
+    username,
     faithSyncId: 'FS-' + firebaseUser.uid.slice(0, 8).toUpperCase(),
-    firstName: firebaseUser.displayName?.split(' ')[0] || emailName,
-    lastName: firebaseUser.displayName?.split(' ').slice(1).join(' ') || '',
+    firstName: nameParts[0] || 'Friend',
+    lastName: nameParts.slice(1).join(' '),
     fullName: firebaseUser.displayName || emailName,
-    displayName: firebaseUser.displayName || emailName,
+    displayName: nameParts[0] || 'Friend',
     avatarUrl: firebaseUser.photoURL || '',
     currentStreak: 0,
     bestStreak: 0,
@@ -133,7 +145,7 @@ async function loadOrCreateProfile(firebaseUser: FirebaseUser): Promise<User> {
     createdAt: new Date().toISOString()
   };
   await runTransaction(db, async transaction => {
-    const handleRef = doc(db, 'handles', emailName);
+    const handleRef = doc(db, 'handles', username);
     const current = await transaction.get(handleRef);
     if (current.exists() && current.data().uid !== firebaseUser.uid) {
       throw new Error('Your profile is missing and your email username is already used. Contact support to restore it.');

@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { FaithSyncLogo } from '../common/FaithSyncLogo';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
+import { GoogleSignInButton } from './GoogleSignInButton';
 
 interface LoginViewProps {
   onSwitchToSignUp: () => void;
@@ -15,12 +16,13 @@ export const LoginView: React.FC<LoginViewProps> = ({
   onForgotPassword,
   onBack
 }) => {
-  const { login } = useApp();
+  const { login, loginWithGoogle } = useApp();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,6 +38,18 @@ export const LoginView: React.FC<LoginViewProps> = ({
       setErrorMessage(error instanceof Error ? error.message : 'Unable to sign in. Check your email and password.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setErrorMessage('');
+    setIsGoogleLoading(true);
+    try {
+      await loginWithGoogle();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to sign in with Google. Please try again.');
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -87,6 +101,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
               Sign in to resume your daily quiet time journey with God.
             </p>
           </div>
+
+          <GoogleSignInButton onClick={handleGoogleSignIn} isLoading={isGoogleLoading} />
 
           {/* Divider */}
           <div className="relative flex items-center justify-center">

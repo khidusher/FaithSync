@@ -70,6 +70,7 @@ export const ProfileScreen: React.FC = () => {
   const [saveSuccessMessage, setSaveSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isExported, setIsExported] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [exportedJson, setExportedJson] = useState<string | null>(null);
 
   // Delete account confirmation modal
@@ -175,6 +176,17 @@ export const ProfileScreen: React.FC = () => {
   // Confirm account deletion
   const handleConfirmDelete = () => {
     deleteAccount();
+  };
+
+  const handleSignOut = async () => {
+    setErrorMessage('');
+    setIsSigningOut(true);
+    try {
+      await logout();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to sign out. Please try again.');
+      setIsSigningOut(false);
+    }
   };
 
   // Compute preview font class
@@ -439,6 +451,22 @@ export const ProfileScreen: React.FC = () => {
               >
                 <Save className="w-4 h-4" />
                 <span>Save Quiet Time Preferences</span>
+              </button>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-[#FFFDF8] border border-[#E6DCCB] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-bold text-[#2D2924]">Sign out of FaithSync</p>
+                <p className="text-xs text-[#766F67] mt-1">You can sign back in whenever you’re ready.</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                disabled={isSigningOut}
+                className="min-h-[44px] px-5 rounded-xl border border-[#B85C50]/35 text-[#9A493F] hover:bg-[#B85C50]/10 text-xs font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-60 disabled:cursor-wait cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>{isSigningOut ? 'Signing out…' : 'Sign out'}</span>
               </button>
             </div>
           </div>
