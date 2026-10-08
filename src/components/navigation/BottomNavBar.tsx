@@ -9,6 +9,7 @@ export const BottomNavBar: React.FC = () => {
     { id: 'bible', label: 'Scripture', icon: 'menu_book' },
     { id: 'reflect', label: 'Reflect', icon: 'lightbulb' },
     { id: 'prayer', label: 'Prayer', icon: 'favorite' },
+    { id: 'friends', label: 'Circle', icon: 'groups' },
     { id: 'journal', label: 'Journal', icon: 'history_edu' }
   ];
 

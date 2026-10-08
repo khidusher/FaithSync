@@ -12,11 +12,13 @@ import { PrayerScreen } from './components/prayer/PrayerScreen';
 import { CalendarScreen } from './components/calendar/CalendarScreen';
 import { ProfileScreen } from './components/profile/ProfileScreen';
 import { ReadingScreen } from './components/reading/ReadingScreen';
+import { FriendsScreen } from './components/friends/FriendsScreen';
 import { CompletionModal } from './components/reading/CompletionModal';
 
 const AppContent: React.FC = () => {
   const {
     currentUser,
+    authStatus,
     currentTab,
     isReadingActive,
     userSettings
@@ -30,6 +32,10 @@ const AppContent: React.FC = () => {
       document.documentElement.classList.remove('dark');
     }
   }, [userSettings?.theme]);
+
+  if (authStatus === 'loading') {
+    return <div className="min-h-screen bg-[#F7F1E5] flex items-center justify-center text-[#6B4F2A]" role="status">Loading FaithSync…</div>;
+  }
 
   // If no user is authenticated, render the splash/auth experience
   if (!currentUser) {
@@ -53,6 +59,7 @@ const AppContent: React.FC = () => {
           {currentTab === 'reflect' && <ReflectScreen />}
           {currentTab === 'prayer' && <PrayerScreen />}
           {(currentTab === 'journal' || currentTab === 'calendar') && <CalendarScreen />}
+          {currentTab === 'friends' && <FriendsScreen />}
           {currentTab === 'profile' && <ProfileScreen />}
         </main>
       </div>

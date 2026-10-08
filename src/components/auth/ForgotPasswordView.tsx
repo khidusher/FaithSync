@@ -3,6 +3,7 @@ import { FaithSyncLogo } from '../common/FaithSyncLogo';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
 import { validateEmail } from '../../utils/validation';
+import { useApp } from '../../context/AppContext';
 
 interface ForgotPasswordViewProps {
   onBackToLogin: () => void;
@@ -11,28 +12,26 @@ interface ForgotPasswordViewProps {
 export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
   onBackToLogin
 }) => {
+  const { sendPasswordReset } = useApp();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
     const emailValidation = validateEmail(email);
-    if (!emailValidation.isValid) {
-      setError(emailValidation.error || 'Please enter a valid email address.');
-      return;
-    }
-
+    if (!emailValidation.isValid) return setError(emailValidation.error || 'Please enter a valid email address.');
     setIsLoading(true);
-
-    // Simulate recovery flow
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await sendPasswordReset(emailValidation.sanitized);
       setIsSuccess(true);
-    }, 600);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Unable to send a reset email. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -51,7 +50,7 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
             </button>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-[#FFFDF8] flex items-center justify-center p-0.5 border border-[#E6DCCB] shadow-2xs">
-                <FaithSyncLogo variant="icon" color="brown" className="w-6 h-6" />
+                <FaithSyncLogo variant="icon" className="w-6 h-6" />
               </div>
               <span className="font-serif font-bold text-base tracking-tight text-[#6B4F2A]">
                 Faith Sync

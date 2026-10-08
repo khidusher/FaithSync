@@ -17,6 +17,7 @@ export const SidebarNav: React.FC = () => {
     { id: 'reflect', label: 'Reflection Space', icon: 'lightbulb' },
     { id: 'prayer', label: 'Prayer Journal', icon: 'favorite' },
     { id: 'journal', label: 'Quiet Time Journal', icon: 'history_edu' },
+    { id: 'friends', label: 'Circle', icon: 'groups' },
     { id: 'profile', label: 'Settings', icon: 'settings' }
   ];
 
@@ -31,7 +32,7 @@ export const SidebarNav: React.FC = () => {
           className="flex items-center gap-3 text-left group"
         >
           <div className="w-10 h-10 rounded-2xl bg-[#F7F1E5] flex items-center justify-center p-1 border border-[#E6DCCB] shadow-2xs group-hover:scale-105 transition-transform">
-            <FaithSyncLogo variant="icon" color="brown" className="w-8 h-8" />
+            <FaithSyncLogo variant="icon" className="w-8 h-8" />
           </div>
           <div className="flex flex-col">
             <span className="font-serif font-bold text-xl text-[#6B4F2A] tracking-tight leading-none">

@@ -51,7 +51,7 @@ export const OnboardingModal: React.FC = () => {
         {step === 1 && (
           <div className="space-y-4 my-auto py-4 text-center">
             <div className="w-16 h-16 rounded-2xl bg-[#F7F1E5] text-[#6B4F2A] flex items-center justify-center mx-auto mb-2 border border-[#E6DCCB] shadow-2xs">
-              <FaithSyncLogo variant="icon" color="brown" className="w-10 h-10" />
+              <FaithSyncLogo variant="icon" className="w-10 h-10" />
             </div>
             <h2 className="font-serif text-2xl font-extrabold text-[#2D2924] tracking-tight">
               Welcome to Faith Sync
