@@ -1,19 +1,20 @@
-import React, { useEffect } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { TopAppBar } from './components/navigation/TopAppBar';
 import { SidebarNav } from './components/navigation/SidebarNav';
 import { BottomNavBar } from './components/navigation/BottomNavBar';
 import { AuthFlow } from './components/auth/AuthFlow';
 import { OnboardingModal } from './components/onboarding/OnboardingModal';
-import { TodayScreen } from './components/home/TodayScreen';
-import { BibleScreen } from './components/bible/BibleScreen';
-import { ReflectScreen } from './components/reflection/ReflectScreen';
-import { PrayerScreen } from './components/prayer/PrayerScreen';
-import { CalendarScreen } from './components/calendar/CalendarScreen';
-import { ProfileScreen } from './components/profile/ProfileScreen';
-import { ReadingScreen } from './components/reading/ReadingScreen';
-import { FriendsScreen } from './components/friends/FriendsScreen';
 import { CompletionModal } from './components/reading/CompletionModal';
+
+const TodayScreen = lazy(() => import('./components/home/TodayScreen').then(module => ({ default: module.TodayScreen })));
+const BibleScreen = lazy(() => import('./components/bible/BibleScreen').then(module => ({ default: module.BibleScreen })));
+const ReflectScreen = lazy(() => import('./components/reflection/ReflectScreen').then(module => ({ default: module.ReflectScreen })));
+const PrayerScreen = lazy(() => import('./components/prayer/PrayerScreen').then(module => ({ default: module.PrayerScreen })));
+const CalendarScreen = lazy(() => import('./components/calendar/CalendarScreen').then(module => ({ default: module.CalendarScreen })));
+const ProfileScreen = lazy(() => import('./components/profile/ProfileScreen').then(module => ({ default: module.ProfileScreen })));
+const ReadingScreen = lazy(() => import('./components/reading/ReadingScreen').then(module => ({ default: module.ReadingScreen })));
+const FriendsScreen = lazy(() => import('./components/friends/FriendsScreen').then(module => ({ default: module.FriendsScreen })));
 
 const AppContent: React.FC = () => {
   const {
@@ -53,22 +54,28 @@ const AppContent: React.FC = () => {
         <TopAppBar />
 
         {/* Main Viewport Content */}
-        <main className="flex-1 w-full pt-16 md:pt-0">
-          {(currentTab === 'today' || currentTab === 'home') && <TodayScreen />}
-          {currentTab === 'bible' && <BibleScreen />}
-          {currentTab === 'reflect' && <ReflectScreen />}
-          {currentTab === 'prayer' && <PrayerScreen />}
-          {(currentTab === 'journal' || currentTab === 'calendar') && <CalendarScreen />}
-          {currentTab === 'friends' && <FriendsScreen />}
-          {currentTab === 'profile' && <ProfileScreen />}
-        </main>
+        <Suspense fallback={<div className="flex-1 p-6 text-sm text-[#766F67]" role="status">Loading your space…</div>}>
+          <main className="flex-1 w-full pt-16 md:pt-0">
+            {(currentTab === 'today' || currentTab === 'home') && <TodayScreen />}
+            {currentTab === 'bible' && <BibleScreen />}
+            {currentTab === 'reflect' && <ReflectScreen />}
+            {currentTab === 'prayer' && <PrayerScreen />}
+            {(currentTab === 'journal' || currentTab === 'calendar') && <CalendarScreen />}
+            {currentTab === 'friends' && <FriendsScreen />}
+            {currentTab === 'profile' && <ProfileScreen />}
+          </main>
+        </Suspense>
       </div>
 
       {/* Mobile-Only Bottom Navigation */}
       <BottomNavBar />
 
       {/* Overlays / Flow Sheets */}
-      {isReadingActive && <ReadingScreen />}
+      {isReadingActive && (
+        <Suspense fallback={null}>
+          <ReadingScreen />
+        </Suspense>
+      )}
       <CompletionModal />
       <OnboardingModal />
     </div>
