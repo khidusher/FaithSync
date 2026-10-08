@@ -176,13 +176,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveSession(StorageService.getQuietTimeSession(user.id));
   };
 
+  const applyAuthenticatedUser = (user: User) => {
+    const cachedUser = StorageService.getCurrentUser();
+    const resolvedUser = cachedUser?.id === user.id ? cachedUser : user;
+    StorageService.setCurrentUser(resolvedUser);
+    setCurrentUser(resolvedUser);
+    setAuthStatus('signedIn');
+    reloadData(resolvedUser);
+  };
+
   useEffect(() => {
     if (currentUser) reloadData(currentUser);
   }, [currentUser?.id]);
 
   useEffect(() => {
     if (!firebaseConfigured) return;
-    return subscribeToAuthState(user => {
+    return subscribeToAuthState((user, authenticatedUid) => {
+      if (!user && authenticatedUid) {
+        const cachedUser = StorageService.getCurrentUser();
+        if (cachedUser?.id === authenticatedUid) {
+          applyAuthenticatedUser(cachedUser);
+        } else {
+          setCurrentUser(null);
+          setAuthStatus('loading');
+        }
+        return;
+      }
+
       setCurrentUser(user);
       setAuthStatus(user ? 'signedIn' : 'signedOut');
       StorageService.setCurrentUser(user);

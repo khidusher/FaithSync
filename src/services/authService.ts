@@ -20,13 +20,14 @@ export type NewAccount = {
   lastName: string;
 };
 
-export const subscribeToAuthState = (callback: (user: User | null) => void) => {
+export const subscribeToAuthState = (callback: (user: User | null, authenticatedUid?: string) => void) => {
   const { auth } = requireFirebase();
   return onAuthStateChanged(auth, async firebaseUser => {
     if (!firebaseUser) {
       callback(null);
       return;
     }
+    callback(null, firebaseUser.uid);
     try {
       callback(await loadOrCreateProfile(firebaseUser));
     } catch (error) {
