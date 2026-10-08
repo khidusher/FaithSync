@@ -1,78 +1,118 @@
-# FaithSync V1 Segments 8 & 9 — Responsive UX, Accessibility, Performance, and Final Polish
+# FaithSync V1 — Product, Accountability, and Firebase Design
 
-**Status:** Proposed implementation design  
+**Status:** Approved conversational design; pending written-spec review  
 **Date:** 2026-10-08  
 **Repository:** `khidusher/FaithSync`  
-**Implementation branch:** `codex/faithsync-v1-responsive-a11y-polish`
+**Work branch:** `codex/faithsync-v1-responsive-a11y-polish`
 
-## Purpose
+## 1. Product definition
 
-Polish the existing FaithSync V1 around its primary purpose: a calm, private companion for daily Quiet Time with God. Improve the existing Today, Quiet Time, Scripture, reflection, prayer, journal/progress, settings, and authentication experiences across phone, tablet, and desktop. Preserve current product behavior and the warm cream visual identity while improving comfort, clarity, accessibility, reliability, and perceived speed.
+**Tagline:** Grow in Faith. Grow Together.
 
-## Current project context
+FaithSync helps young Christians build a consistent Bible-reading and Quiet Time habit through personal progress and trusted-friend encouragement. It is an accountability product built around Scripture, not a replacement Bible reader or a general church-management platform.
 
-The app is a React 19, TypeScript, Vite, and Tailwind application. Its main navigation already has a mobile bottom bar and desktop sidebar. Quiet Time stages and Scripture preferences are already present. User settings, prayers, completions, and in-progress session drafts are stored in browser localStorage through `StorageService`; the active session currently exposes an autosave indicator in `ReadingScreen`. The reflection screen has a separate form state and saves on submit. The settings screen is represented by `ProfileScreen`.
+The V1 loop is:
 
-This work will follow those existing patterns. In particular, local persistence must be described as local persistence: the UI must not imply remote synchronization or a server save when no server operation occurred.
+**Read → Complete → Track → Share (if chosen) → Encourage → Return**
 
-## Design principles and scope
+A missed day is a normal interruption. It is never shown to friends, framed as failure, or used to shame the user.
 
-- Keep the V1 focused on private daily Quiet Time. Do not add product features or broaden social/community functionality.
-- Prefer small, targeted changes to existing components and shared styles.
-- Keep Scripture and writing content visually primary; reduce competing labels, cards, and decorative motion where they obstruct reading or focus.
-- Preserve existing data and current localStorage keys where possible. Avoid migrations unless inspection proves one is required.
-- Treat saving as successful only after the local storage write succeeds. If local storage is unavailable or full, preserve the user's current in-memory text, explain the issue plainly, and avoid a false “Saved” status.
-- Respect reduced-motion preferences and keep visual feedback brief and quiet.
+## 2. Refined product rules and missing decisions
 
-## Proposed implementation
+### Sharing contract
 
-### 1. Shared responsive shell and navigation
+- A user's activity is private by default.
+- The user may explicitly share a Quiet Time completion with accepted friends. The shared event contains only the user's display identity, completion date/time, and optional Scripture reference.
+- Reflections, prayer text, journal entries, highlighted verses, and private notes are never included in the friend feed.
+- The user can turn sharing off, remove a friend, block a user, or report a concern.
+- V1 has no public activity feed, rankings, direct messages, or visibility of missed days.
+- Friend discovery uses an exact username or FaithSync ID lookup; do not expose a browsable directory.
 
-Review the shared shell, Today header, mobile top bar, bottom navigation, desktop sidebar, and page containers at small-phone, standard-phone, large-phone, portrait-tablet, landscape-tablet, and desktop widths.
+### Safety and audience
 
-Keep comfortable page gutters and readable maximum widths rather than allowing reading and writing layouts to stretch across wide displays. Retain one-handed mobile navigation and reserve safe-area space so fixed bars never cover content or focused controls. Check tablet layouts around the existing navigation breakpoint and adjust only where intermediate widths expose cramped content or sudden layout changes. Ensure menus and dialogs fit within the viewport and can scroll when needed.
+The concept includes senior-high-school students, so V1 includes friend-request controls, block/report actions, and no open messaging. Before a public launch, FaithSync must define its minimum supported age and who reviews safety reports. These are product release prerequisites; this design does not invent an age threshold or claim legal compliance.
 
-### 2. Quiet Time and Scripture reading
+### Success measurement
 
-Review the five existing Quiet Time stages and the standalone Scripture view. Give Scripture a comfortable reading measure, line height, paragraph spacing, and adjustable text size while keeping the controls subdued. Make verse numbers and any interactive verse/highlight controls understandable to keyboard and screen-reader users. Preserve the user's reading preferences. Add appropriate reduced-motion behavior to stage changes and breathing animation; keep the breathing aid optional and non-blocking.
+The primary measure is whether users return to Bible reading consistently, especially after an interruption. Track activation, daily/weekly active use, completion rate, 7/30-day retention, reading days per active user, plan completion, friend connections, encouragement actions, and return after a missed day. Do not send reflection, prayer, or journal text to analytics. Prefer aggregate event counts and clear definitions over a large dashboard of unvalidated metrics.
 
-### 3. Reflection and prayer writing
+### V1 and later
 
-Make reflection and prayer inputs spacious and usable with mobile keyboards. Associate visible labels and validation messages with each field. Load saved reflection and prayer content when reopening an existing session or journal entry. Persist drafts locally at a safe cadence and on stage/navigation transitions, with saving feedback that distinguishes saving, saved locally, and a failed write. Prevent duplicate prayer or completion records when a save or completion action is repeated. Keep explicit submit actions available and retain entered text if validation or persistence fails.
+V1 includes real accounts, daily reading and Quiet Time, private progress and journal, optional friend connections, completion sharing, encouragement, privacy controls, and restrained in-app notifications.
 
-### 4. Accessibility and feedback
+Accountability groups, shared challenges, organization tools, subscription tiers, premium plans, and advertising remain future options. V1 should validate adoption and consistency without monetization pressure.
 
-Use semantic landmarks and headings, descriptive accessible names for icon-only actions, visible keyboard focus, and appropriate current-page state for navigation. Verify dialog focus entry, Escape dismissal where appropriate, and focus return. Ensure errors are associated with fields and announced, and success/loading/save messages use restrained live-region feedback. Check text and control contrast against the cream palette; do not use color alone to communicate completion, errors, or saving. Apply reduced-motion preferences to non-essential transitions, pulsing, breathing effects, and celebration.
+## 3. Current codebase findings
 
-### 5. Loading, errors, empty states, and resilience
+The repository is a React, TypeScript, Vite, and Tailwind web app with the Today, Scripture, reflection, prayer, journal/calendar, and settings flows.
 
-Audit the screens and Bible data loading paths for blank waits and raw technical errors. Use consistent FaithSync loading and retry states where a request can fail. For local-only state, report local save status accurately and handle storage exceptions without clearing the draft. Keep empty states calm and useful, especially for new users with no journal history or progress. Do not introduce an offline-sync queue or server retry behavior unless a real remote write path exists.
+- `src/App.tsx` does not route the existing Circle/Friends screen.
+- `src/components/friends/FriendsScreen.tsx` contains hard-coded people and local-only interactions.
+- `src/context/AppContext.tsx` and `src/services/storage.ts` keep identity, friend records, prayer records, and quiet-time data in localStorage. The current login path creates a local user and does not authenticate a password.
+- The current app has no Firebase SDK/configuration, Firestore rules, Firebase project file, or security-rule tests.
 
-### 6. Performance and visual consistency
+The current social UI is a prototype. Local browser state cannot provide real accounts, cross-device data, or actual friend-to-friend sharing.
 
-Review image loading and dimensions, repeated work in the core flows, motion effects, and any unnecessarily large UI assets. Defer below-the-fold images where supported, avoid adding dependencies, and remove only effects or markup that have no product value. Standardize shared focus, spacing, control sizing, card, input, and status styles where they improve consistency without turning this into a broad redesign. Keep potentially large history views bounded to the amount needed for the visible screen if the current data model permits it without changing behavior.
+## 4. Architecture and data boundaries
 
-## Error and save behavior
+Use Firebase Authentication and Cloud Firestore. Start with email/password authentication, password reset, and an auth-state observer. Keep Google sign-in as a later provider. Firebase's modular web SDK supports these authentication flows and an observer for restoring signed-in state ([Firebase Auth for web](https://firebase.google.com/docs/auth/web/start)).
 
-- Local write succeeds: show “Saved on this device” or an equivalent accurate status.
-- Local write fails: retain the in-memory draft, show a plain explanation and a retry/save action when useful, and never display a successful-save state.
-- Validation fails: keep all field content, associate the specific message with its field, and do not submit.
-- Bible request fails: show a short friendly message and retry action; do not expose raw exception details.
-- Completion action is repeated: ensure the same user, plan, and date do not create duplicate completion/prayer records.
+Suggested Firestore boundaries:
 
-## Verification plan
+- `profiles/{uid}`: minimal discoverable profile fields (username, display name, avatar, discoverability).
+- `usernames/{normalizedUsername}`: unique username reservation mapped to a UID.
+- `users/{uid}/settings/{document}`: private preferences, reminders, and visibility controls.
+- `users/{uid}/quietTimeEntries/{entryId}`: private completion details, reflection, prayer, verse highlights, and journal content.
+- `connections/{pairId}`: friend request/accepted relationship state for its two member UIDs.
+- `activityEvents/{eventId}`: minimal completion metadata, created only when the owner opts to share.
+- `encouragements/{id}`: a bounded encouragement event sent between accepted friends.
+- `blocks/{id}` and `reports/{id}`: safety actions with restricted access.
 
-Use the existing build and type-check commands, then perform a focused manual journey through sign-up/login, Today, all Quiet Time stages, Scripture preferences, reflection and prayer draft save/reopen, completion, progress/journal review, reminder settings, sign-out/sign-in, and data retention. Check keyboard-only navigation, visible focus, reduced motion, and screen-reader names on primary controls. Review responsive layouts at representative phone, tablet, and desktop widths, including fixed navigation and keyboard-open states. Confirm local persistence failures do not report success.
+The exact field names can be finalized during implementation, but private and shareable content must remain in different documents. Firestore rules deny access by default, allow private data only to its owner, and allow a shared activity event only to its owner and an accepted, unblocked friend. User discovery returns only a minimal profile to an authenticated exact-handle lookup. Use bounded/paginated feed queries; never fetch the full journal to render a recent feed.
 
-The repository currently exposes `build` and `lint` scripts but no dedicated test script. Do not add a test framework solely for this polish pass; use the existing scripts and focused manual checks. If the repository’s remote workflow can run the scripts after the implementation branch is pushed, use it as additional verification.
+Cloud Firestore Security Rules are the authorization boundary for web client reads and writes ([Firestore security rules](https://firebase.google.com/docs/firestore/security/get-started)). Every client-visible operation must have a matching rule and emulator test.
 
-## Out of scope
+## 5. Authentication, writes, and migration
 
-- New product features, social/community expansion, or a redesign of FaithSync's core journey.
-- Replacing localStorage with a backend, adding cross-device sync, or claiming server-side privacy/security guarantees.
-- New dependencies unless an existing code path makes one essential.
-- Deployment, publishing, or merging into `main`.
+- Replace local mock login/signup with Firebase Auth. Use Firebase UID as the stable owner key.
+- Create a minimal profile and initial settings after signup; handle collisions for usernames with an atomic reservation.
+- Friend requests require explicit acceptance. A block prevents future requests and hides the blocker's activity from the blocked account.
+- A Quiet Time completion uses a stable, idempotent event ID so a retry cannot create a duplicate completion or shared event.
+- Create a shared activity event only after an explicit share choice. Updating or deleting the private reflection/prayer must never modify a shared event.
+- Offer a one-time, user-confirmed import of the current device's personal history after account creation. Import only the active user's personal entries/settings; never import seeded demo users, fake friend activity, or fake social relationships. Preserve local data until the import succeeds.
+- Account export and deletion must cover Firebase records as well as any local drafts.
 
-## Delivery
+## 6. Offline behavior and privacy
 
-Implement the approved work on `codex/faithsync-v1-responsive-a11y-polish`. Keep `main` unchanged and prepare a reviewable pull request after implementation and verification. Do not merge or deploy as part of this work.
+Keep Firestore's persistent web cache disabled for V1 private spiritual records. Firebase documents that web persistence is disabled by default and that its cache is not automatically cleared between sessions, with a trusted-device consideration for sensitive information ([Firestore offline data](https://firebase.google.com/docs/firestore/manage-data/enable-offline)).
+
+Keep unfinished writing drafts in account-scoped device storage until Firestore confirms the write. Show distinct states such as **Saved on this device**, **Syncing**, **Synced**, and **Could not sync — retry**. Do not claim a remote save based on a local cache. Clear a local draft after server acknowledgment or account deletion; never show it under a different UID. Keep offline completion retries idempotent.
+
+## 7. App experience and quality requirements
+
+- Wire the Circle screen into primary mobile and desktop navigation. Replace mock data with authenticated profiles, accepted connections, pending requests, recent shared completions, and encouragement actions.
+- Add an explicit share control to the completion flow and a clear privacy setting. Keep private journal/reflection/prayer screens owner-only.
+- Add accessible labels, semantic landmarks, visible keyboard focus, form error associations, dialog keyboard behavior, and reduced-motion support.
+- Review mobile safe areas and tap targets, tablet breakpoints, and comfortable reading/writing widths on desktop.
+- Keep Scripture typography comfortable; keep long-form reflection and prayer fields spacious.
+- Show helpful loading, retry, empty, validation, and save states. Handle auth and network errors without exposing raw Firebase errors.
+- Paginate the Circle feed (initially 20 recent events) and avoid loading the full journal for previews.
+- Preserve the warm cream visual identity and remove only clutter or motion that competes with Scripture, writing, or navigation.
+
+## 8. Verification and release setup
+
+Implementation verification includes:
+
+1. Build and TypeScript checks.
+2. Firebase Emulator Suite tests for unauthenticated denial, owner access, accepted-friend shared-event access, non-friend denial, blocked-user denial, private reflection/prayer denial, friend-request transitions, and idempotent completion writes. Firebase recommends emulator-based Security Rules unit tests ([Firebase Rules unit tests](https://firebase.google.com/docs/rules/unit-tests)).
+3. A manual V1 journey: sign up, complete Quiet Time, save and reopen private reflection/prayer, choose whether to share, send/accept a friend request, view the Circle feed, encourage a friend, change visibility, sign out/in, and confirm data remains private and available.
+4. Responsive review at small/standard/large phone, portrait/landscape tablet, and desktop widths; keyboard-only navigation, screen-reader names, reduced motion, and offline/save-state review.
+
+A Firebase project is not configured in this repository. Running the real backend will require a Firebase web app configuration, Email/Password Auth enabled, Firestore initialized, and local environment values. Keep per-environment configuration out of commits. Do not deploy rules or release the app as part of this design/implementation branch.
+
+## 9. Out of scope
+
+- Public social networking, direct messages, open member search, rankings, or shame-based streak mechanics.
+- Accountability groups, organization administration, shared challenges, or monetization features.
+- Replacing the Bible reader, adding an unlicensed Bible translation, or collecting private writing as analytics.
+- Merging into `main`, deploying, or publishing before review.
