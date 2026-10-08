@@ -1,0 +1,6 @@
+{
+  "name": "FaithSync",
+  "description": "Helping Christians build a consistent, meaningful daily quiet time with God.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

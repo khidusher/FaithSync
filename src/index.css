@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-serif: 'Playfair Display', Georgia, serif;
+    
+    /* Warm Christian Community Palette */
+    --color-bg: #F7F1E5;
+    --color-surface: #FFFDF8;
+    --color-brand-primary: #6B4F2A;
+    --color-brand-secondary: #A67C52;
+    --color-gold: #D4A94D;
+    --color-text-primary: #2D2924;
+    --color-text-secondary: #766F67;
+    --color-border: #E6DCCB;
+    --color-success: #66805C;
+    --color-warning: #C28A3D;
+    --color-error: #B85C50;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #F7F1E5;
+    color: #2D2924;
+    -webkit-tap-highlight-color: transparent;
+    margin: 0;
+    padding: 0;
+  }
+
+  h1, h2, .font-serif {
+    font-family: var(--font-serif);
+  }
+}
+
+.font-serif {
+  font-family: 'Playfair Display', Georgia, serif !important;
+}
+
+.font-sans {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
+}
+
+/* Material Symbols font configuration */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Safe area padding */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
