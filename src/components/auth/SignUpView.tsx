@@ -96,7 +96,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
             )}
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-[#FFFDF8] flex items-center justify-center p-0.5 border border-[#E6DCCB] shadow-2xs">
-                <FaithSyncLogo variant="icon" color="brown" className="w-6 h-6" />
+                <FaithSyncLogo variant="icon" className="w-6 h-6" />
               </div>
               <span className="font-serif font-bold text-base tracking-tight text-[#6B4F2A]">
                 Faith Sync
@@ -113,7 +113,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
           {/* Header */}
           <div className="flex flex-col gap-1.5 text-center items-center">
             <div className="w-12 h-12 rounded-2xl bg-[#F7F1E5] text-[#6B4F2A] border border-[#E6DCCB] flex items-center justify-center mb-1">
-              <FaithSyncLogo variant="icon" color="brown" className="w-8 h-8" />
+              <FaithSyncLogo variant="icon" className="w-8 h-8" />
             </div>
             <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#66805C]/15 text-[#66805C] border border-[#66805C]/30 text-[10px] font-bold uppercase tracking-wider">
               <span>Daily Quiet Time with God</span>

@@ -20,7 +20,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
         <div className="max-w-6xl mx-auto px-5 sm:px-8 h-16 sm:h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-[#FFFDF8] flex items-center justify-center p-1 border border-[#E6DCCB] shadow-2xs">
-              <FaithSyncLogo variant="icon" color="brown" className="w-7 h-7 sm:w-8 sm:h-8" />
+              <FaithSyncLogo variant="icon" className="w-7 h-7 sm:w-8 sm:h-8" />
             </div>
             <div className="flex flex-col">
               <span className="font-serif font-bold text-lg sm:text-xl text-[#6B4F2A] tracking-tight leading-none">
@@ -152,7 +152,7 @@ export const LandingView: React.FC<LandingViewProps> = ({
       <footer className="w-full border-t border-[#E6DCCB] py-6 px-5 text-center text-xs text-[#766F67] font-sans">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <FaithSyncLogo variant="icon" color="brown" className="w-5 h-5" />
+            <FaithSyncLogo variant="icon" className="w-5 h-5" />
             <span className="font-serif font-bold text-[#6B4F2A]">Faith Sync</span>
             <span>•</span>
             <span>Helping Christians build a consistent daily quiet time with God.</span>

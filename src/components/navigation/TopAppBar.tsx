@@ -51,7 +51,7 @@ export const TopAppBar: React.FC = () => {
               className="flex items-center gap-2 group text-left"
             >
               <div className="w-8 h-8 rounded-xl bg-[#FFFDF8] flex items-center justify-center p-0.5 shadow-2xs border border-[#E6DCCB]">
-                <FaithSyncLogo variant="icon" color="brown" className="w-6 h-6" />
+                <FaithSyncLogo variant="icon" className="w-6 h-6" />
               </div>
               <div className="flex flex-col">
                 <span className="font-serif font-bold text-base text-[#6B4F2A] leading-none tracking-tight">
