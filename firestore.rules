@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function pairId(a, b) {
+      return a < b ? a + '_' + b : b + '_' + a;
+    }
+
+    function acceptedFriend(ownerUid) {
+      let connection = /databases/$(database)/documents/connections/$(pairId(request.auth.uid, ownerUid));
+      return signedIn()
+        && exists(connection)
+        && get(connection).data.status == 'accepted';
+    }
+
+    match /users/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow list: if false;
+      allow create, update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly([
+          'uid', 'username', 'faithSyncId', 'firstName', 'lastName',
+          'fullName', 'displayName', 'avatarUrl', 'currentStreak',
+          'bestStreak', 'totalCompletedDays', 'quietTimeGoalMinutes',
+          'preferredQuietTime', 'readingPlanId', 'currentDayNumber',
+          'isOnboarded', 'createdAt'
+        ])
+        && request.resource.data.uid == uid;
+
+      match /sharedActivity/{activityId} {
+        allow get, list: if signedIn()
+          && (request.auth.uid == uid || acceptedFriend(uid));
+        allow create, update: if signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly([
+            'id', 'ownerUid', 'displayName', 'avatarUrl',
+            'scriptureReference', 'completedAt', 'visibility'
+          ])
+          && request.resource.data.ownerUid == uid
+          && request.resource.data.visibility == 'friends';
+        allow delete: if signedIn() && request.auth.uid == uid;
+
+        match /encouragements/{senderUid} {
+          allow get: if signedIn()
+            && (request.auth.uid == uid || request.auth.uid == senderUid);
+          allow list: if signedIn() && request.auth.uid == uid;
+          allow create: if signedIn()
+            && request.auth.uid == senderUid
+            && acceptedFriend(uid)
+            && request.resource.data.keys().hasOnly(['senderUid', 'type', 'createdAt'])
+            && request.resource.data.senderUid == senderUid
+            && request.resource.data.type in [
+              'heart', 'celebrate', 'pray', 'keep_going',
+              'proud_of_you', 'growing_together'
+            ];
+          allow update: if false;
+          allow delete: if signedIn() && request.auth.uid == senderUid;
+        }
+      }
+    }
+
+    match /publicProfiles/{uid} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create, update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly([
+          'uid', 'username', 'faithSyncId', 'displayName', 'avatarUrl', 'createdAt'
+        ])
+        && request.resource.data.uid == uid;
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /handles/{handle} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == request.auth.uid
+        && !exists(/databases/$(database)/documents/handles/$(handle));
+      allow update, delete: if false;
+    }
+
+    match /faithSyncIds/{faithSyncId} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == request.auth.uid
+        && !exists(/databases/$(database)/documents/faithSyncIds/$(faithSyncId));
+      allow update, delete: if false;
+    }
+
+    match /connections/{connectionId} {
+      allow get, list: if signedIn() && request.auth.uid in resource.data.uids;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'uids', 'requesterUid', 'recipientUid', 'status', 'createdAt'
+        ])
+        && request.resource.data.requesterUid == request.auth.uid
+        && request.resource.data.recipientUid != request.auth.uid
+        && request.resource.data.uids.size() == 2
+        && request.resource.data.uids.hasAll([request.auth.uid, request.resource.data.recipientUid])
+        && request.resource.data.status == 'pending'
+        && connectionId == pairId(request.auth.uid, request.resource.data.recipientUid);
+      allow update: if signedIn()
+        && request.auth.uid == resource.data.recipientUid
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'accepted'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']);
+      allow delete: if signedIn()
+        && request.auth.uid in resource.data.uids
+        && (resource.data.status == 'accepted'
+          || (resource.data.status == 'pending' && request.auth.uid == resource.data.recipientUid));
+    }
+  }
+}

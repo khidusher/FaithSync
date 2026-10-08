@@ -8,11 +8,6 @@ import { AuthView } from '../../types';
 
 export const AuthFlow: React.FC = () => {
   const [currentView, setCurrentView] = useState<AuthView>('landing');
-  const { login } = useApp();
-
-  const handleDemoAccess = () => {
-    login('arnoldodjidja01@gmail.com', 'password');
-  };
 
   switch (currentView) {
     case 'signup':
@@ -45,7 +40,6 @@ export const AuthFlow: React.FC = () => {
         <LandingView
           onGetStarted={() => setCurrentView('signup')}
           onSignIn={() => setCurrentView('login')}
-          onDemoAccess={handleDemoAccess}
         />
       );
   }

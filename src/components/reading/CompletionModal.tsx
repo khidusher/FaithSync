@@ -1,18 +1,62 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Check, Flame, Calendar, HeartHandshake, ArrowRight } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { firebaseConfigured } from '../../lib/firebase';
 
 export const CompletionModal: React.FC = () => {
   const {
     isCelebrationOpen,
     closeCelebration,
     justCompletedData,
+    shareCurrentCompletion,
+    unshareCurrentCompletion,
     setCurrentTab
   } = useApp();
 
   if (!isCelebrationOpen || !justCompletedData) return null;
 
   const { completion, streak, totalDays } = justCompletedData;
+  const [shareStatus, setShareStatus] = useState<'idle' | 'saving' | 'shared' | 'error'>('idle');
+  const [shareMessage, setShareMessage] = useState('');
+  const [isUnsharing, setIsUnsharing] = useState(false);
+
+  useEffect(() => {
+    setShareStatus('idle');
+    setShareMessage('');
+  }, [completion.id]);
+
+  const handleShare = async () => {
+    setShareStatus('saving');
+    setShareMessage('');
+    try {
+      const friendCount = await shareCurrentCompletion();
+      if (!friendCount) {
+        setShareStatus('idle');
+        setShareMessage('Connect with a friend in Circle before sharing this completion.');
+        return;
+      }
+      setShareStatus('shared');
+      setShareMessage('Shared with ' + friendCount + (friendCount === 1 ? ' friend.' : ' friends.'));
+    } catch (shareError) {
+      setShareStatus('error');
+      setShareMessage(shareError instanceof Error ? shareError.message : 'Could not share this completion.');
+    }
+  };
+
+  const handleUnshare = async () => {
+    setIsUnsharing(true);
+    setShareStatus('saving');
+    try {
+      await unshareCurrentCompletion();
+      setShareStatus('idle');
+      setShareMessage('This completion is private again.');
+    } catch (shareError) {
+      setShareStatus('error');
+      setShareMessage(shareError instanceof Error ? shareError.message : 'Could not remove this share.');
+    } finally {
+      setIsUnsharing(false);
+    }
+  };
 
   const todayDateStr = new Date(completion.completedAt).toLocaleDateString('en-US', {
     weekday: 'long',
@@ -95,6 +139,21 @@ export const CompletionModal: React.FC = () => {
               ))}
             </div>
           </div>
+        </div>
+
+        <div className="rounded-xl border border-[#E6DCCB] bg-[#F7F1E5] p-4 text-left">
+          <p className="text-sm font-bold text-[#2D2924]">Share this Quiet Time?</p>
+          <p className="mt-1 text-xs leading-5 text-[#766F67]">Only the completion and Scripture reference are shared. Your reflection and prayer remain private.</p>
+          {firebaseConfigured ? (
+            shareStatus === 'shared' ? (
+              <button onClick={() => void handleUnshare()} disabled={isUnsharing} className="mt-3 min-h-10 rounded-lg border border-[#E6DCCB] bg-[#FFFDF8] px-4 text-xs font-bold text-[#6B4F2A]">{isUnsharing ? 'Removing…' : 'Remove share'}</button>
+            ) : (
+              <button onClick={() => void handleShare()} disabled={shareStatus === 'saving'} className="mt-3 min-h-10 rounded-lg bg-[#6B4F2A] px-4 text-xs font-bold text-white disabled:opacity-60">{shareStatus === 'saving' ? 'Sharing…' : 'Share with my Circle'}</button>
+            )
+          ) : (
+            <p className="mt-2 text-xs font-semibold text-[#A67C52]">Set up Firebase to share with friends.</p>
+          )}
+          {shareMessage && <p role={shareStatus === 'error' ? 'alert' : 'status'} className="mt-2 text-xs text-[#6B4F2A]">{shareMessage}</p>}
         </div>
 
         {/* Action Buttons */}

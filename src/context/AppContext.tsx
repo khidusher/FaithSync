@@ -16,6 +16,9 @@ import {
 import { StorageService, getLocalDateKey } from '../services/storage';
 import { BibleService } from '../services/bibleService';
 import { READING_PLANS } from '../data/initialData';
+import { firebaseConfigured } from '../lib/firebase';
+import { registerAccount, sendPasswordReset, signInWithEmail, signOutAccount, subscribeToAuthState } from '../services/authService';
+import { shareCompletion as shareCompletionToCircle, unshareCompletion as unshareCompletionFromCircle } from '../services/socialService';
 
 export type TabType =
   | 'today'
@@ -32,6 +35,7 @@ export type TabType =
 
 interface AppContextType {
   currentUser: User | null;
+  authStatus: 'loading' | 'signedOut' | 'signedIn';
   userSettings: UserSettings;
   readingPlans: ReadingPlan[];
   activePlan: ReadingPlan;
@@ -58,19 +62,21 @@ interface AppContextType {
   } | null;
   // Auth & Onboarding
   setCurrentTab: (tab: TabType) => void;
-  login: (email: string, password?: string) => boolean;
+  login: (email: string, password: string) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
   signup: (userData: {
     firstName: string;
     lastName: string;
     email: string;
     username: string;
+    password: string;
     fullName?: string;
     displayName?: string;
     churchName?: string;
     branch?: string;
     onboardingCompleted?: boolean;
-  }) => void;
-  logout: () => void;
+  }) => Promise<void>;
+  logout: () => Promise<void>;
   deleteAccount: () => boolean;
   exportUserData: () => string;
   updateProfile: (updates: Partial<User>) => void;
@@ -105,6 +111,8 @@ interface AppContextType {
     highlightedVerses?: number[]
   ) => void;
   closeCelebration: () => void;
+  shareCurrentCompletion: () => Promise<number>;
+  unshareCurrentCompletion: () => Promise<void>;
   selectReadingPlan: (planId: string) => void;
   // Prayer Journal
   addPrayer: (prayer: Omit<PrayerItem, 'id' | 'userId' | 'createdAt'>) => void;
@@ -125,7 +133,8 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(() => StorageService.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<User | null>(() => firebaseConfigured ? null : StorageService.getCurrentUser());
+  const [authStatus, setAuthStatus] = useState<'loading' | 'signedOut' | 'signedIn'>(firebaseConfigured ? 'loading' : 'signedOut');
   const [userSettings, setUserSettings] = useState<UserSettings>(() => {
     const user = StorageService.getCurrentUser();
     return StorageService.getUserSettings(user?.id || 'user_arnold');
@@ -167,10 +176,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   useEffect(() => {
-    if (currentUser) {
-      reloadData(currentUser);
-    }
+    if (currentUser) reloadData(currentUser);
   }, [currentUser?.id]);
+
+  useEffect(() => {
+    if (!firebaseConfigured) return;
+    return subscribeToAuthState(user => {
+      setCurrentUser(user);
+      setAuthStatus(user ? 'signedIn' : 'signedOut');
+      StorageService.setCurrentUser(user);
+      if (user) reloadData(user);
+      else {
+        setCompletions([]);
+        setPrayers([]);
+        setFriends([]);
+        setActivityFeed([]);
+        setActiveSession(null);
+      }
+    });
+  }, []);
 
   // Determine active reading plan and today's passage
   const activePlan = useMemo(() => {
@@ -198,89 +222,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [notifications]);
 
   // Auth operations
-  const login = (email: string): boolean => {
-    const users = StorageService.getAllUsers();
-    const existing = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (existing) {
-      StorageService.setCurrentUser(existing);
-      setCurrentUser(existing);
-      reloadData(existing);
-      return true;
-    }
-    // Create new quick user if not found
-    const namePart = email.split('@')[0];
-    const newUser: User = {
-      id: `user_${Date.now()}`,
-      firstName: namePart.charAt(0).toUpperCase() + namePart.slice(1),
-      lastName: 'Seeker',
-      username: namePart.toLowerCase(),
-      email,
-      faithSyncId: `FS-${Math.floor(1000 + Math.random() * 9000)}`,
-      avatarUrl: `https://api.dicebear.com/7.x/micah/svg?seed=${namePart}&backgroundColor=b6e3f4,c0aede`,
-      currentStreak: 1,
-      bestStreak: 1,
-      totalCompletedDays: 0,
-      createdAt: new Date().toISOString(),
-      quietTimeGoalMinutes: 10,
-      preferredQuietTime: 'Morning',
-      readingPlanId: 'plan_walk_with_jesus',
-      currentDayNumber: 1,
-      isOnboarded: false
-    };
-    StorageService.setCurrentUser(newUser);
-    setCurrentUser(newUser);
-    reloadData(newUser);
-    return true;
-  };
+const login = async (email: string, password = ''): Promise<void> => {
+  await signInWithEmail(email, password);
+};
 
-  const signup = (userData: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    username: string;
-    fullName?: string;
-    displayName?: string;
-    churchName?: string;
-    branch?: string;
-    onboardingCompleted?: boolean;
-  }) => {
-    const newUser: User = {
-      id: `user_${Date.now()}`,
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      fullName: userData.fullName || `${userData.firstName} ${userData.lastName}`.trim(),
-      displayName: userData.displayName || userData.firstName,
-      username: userData.username,
-      email: userData.email,
-      churchName: userData.churchName || 'Grace Community Church',
-      branch: userData.branch || 'Central Campus',
-      faithSyncId: `FS-${Math.floor(1000 + Math.random() * 9000)}`,
-      avatarUrl: `https://api.dicebear.com/7.x/micah/svg?seed=${userData.username}&backgroundColor=b6e3f4,c0aede`,
-      currentStreak: 0,
-      bestStreak: 0,
-      totalCompletedDays: 0,
-      createdAt: new Date().toISOString(),
-      quietTimeGoalMinutes: 10,
-      preferredQuietTime: 'Morning',
-      readingPlanId: 'plan_walk_with_jesus',
-      currentDayNumber: 1,
-      isOnboarded: false,
-      onboardingCompleted: userData.onboardingCompleted ?? false
-    };
-    StorageService.setCurrentUser(newUser);
-    setCurrentUser(newUser);
-    reloadData(newUser);
-  };
+const signup = async (userData: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  username: string;
+  password: string;
+  fullName?: string;
+  displayName?: string;
+  churchName?: string;
+  branch?: string;
+  onboardingCompleted?: boolean;
+}): Promise<void> => {
+  const user = await registerAccount({
+    email: userData.email,
+    password: userData.password,
+    username: userData.username,
+    firstName: userData.firstName,
+    lastName: userData.lastName
+  });
+  StorageService.setCurrentUser(user);
+  setCurrentUser(user);
+  setAuthStatus('signedIn');
+  reloadData(user);
+};
 
-  const logout = () => {
-    StorageService.setCurrentUser(null);
-    setCurrentUser(null);
-    setActiveSession(null);
-    setCompletions([]);
-    setPrayers([]);
-    setActiveReadingDay(null);
-    setIsReadingActive(false);
-  };
+const logout = async () => {
+  if (firebaseConfigured) await signOutAccount();
+  else StorageService.setCurrentUser(null);
+  setCurrentUser(null);
+  setAuthStatus('signedOut');
+  setActiveSession(null);
+  setCompletions([]);
+  setPrayers([]);
+  setActiveReadingDay(null);
+  setIsReadingActive(false);
+};
+
 
   const deleteAccount = (): boolean => {
     if (!currentUser) return false;
@@ -510,6 +492,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const shareCurrentCompletion = async () => {
+    if (!currentUser || !justCompletedData) return 0;
+    return shareCompletionToCircle(currentUser.id, justCompletedData.completion, currentUser);
+  };
+
+  const unshareCurrentCompletion = async () => {
+    if (!currentUser || !justCompletedData) return;
+    await unshareCompletionFromCircle(currentUser.id, justCompletedData.completion.id);
+  };
+
   const closeCelebration = () => {
     setIsCelebrationOpen(false);
     setJustCompletedData(null);
@@ -624,6 +616,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider
       value={{
         currentUser,
+        authStatus,
         userSettings,
         readingPlans: READING_PLANS,
         activePlan,
@@ -645,6 +638,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         justCompletedData,
         setCurrentTab,
         login,
+        sendPasswordReset,
         signup,
         logout,
         deleteAccount,
@@ -659,6 +653,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         clearActiveSession,
         markReadingComplete,
         closeCelebration,
+        shareCurrentCompletion,
+        unshareCurrentCompletion,
         selectReadingPlan,
         addPrayer,
         updatePrayer,

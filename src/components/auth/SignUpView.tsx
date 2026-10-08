@@ -18,64 +18,52 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
     const nameValidation = validateName(fullName, 'Full name');
-    if (!nameValidation.isValid) {
-      setErrorMessage(nameValidation.error || 'Please enter your full name.');
-      return;
-    }
-
+    if (!nameValidation.isValid) return setErrorMessage(nameValidation.error || 'Please enter your full name.');
     const emailValidation = validateEmail(email);
-    if (!emailValidation.isValid) {
-      setErrorMessage(emailValidation.error || 'Please enter a valid email address.');
-      return;
+    if (!emailValidation.isValid) return setErrorMessage(emailValidation.error || 'Please enter a valid email address.');
+    const cleanUsername = username.trim().replace(/^@/, '').toLowerCase();
+    if (!/^[a-z0-9_]{3,20}$/.test(cleanUsername)) {
+      return setErrorMessage('Choose a username with 3–20 letters, numbers, or underscores.');
     }
-
     const passValidation = validatePassword(password);
-    if (!passValidation.isValid) {
-      setErrorMessage(passValidation.error || 'Password must be at least 6 characters long.');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setErrorMessage('Passwords do not match. Please verify your password.');
-      return;
-    }
-
-    if (!agreeTerms) {
-      setErrorMessage('Please accept the privacy terms to continue.');
-      return;
-    }
-
-    setIsSubmitting(true);
+    if (!passValidation.isValid) return setErrorMessage(passValidation.error || 'Password must be at least 6 characters long.');
+    if (password !== confirmPassword) return setErrorMessage('Passwords do not match. Please verify your password.');
+    if (!agreeTerms) return setErrorMessage('Please accept the privacy terms to continue.');
 
     const nameParts = nameValidation.sanitized.split(' ');
     const firstName = nameParts[0] || 'Friend';
     const lastName = nameParts.slice(1).join(' ') || '';
-    const username = emailValidation.sanitized.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '') || firstName.toLowerCase();
-
-    setTimeout(() => {
-      signup({
+    setIsSubmitting(true);
+    try {
+      await signup({
         fullName: nameValidation.sanitized,
         displayName: firstName,
         firstName,
         lastName,
-        username,
+        username: cleanUsername,
+        password,
         email: emailValidation.sanitized,
         churchName: '',
         branch: '',
         onboardingCompleted: true
       });
-    }, 450);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to create your account. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -96,7 +84,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
             )}
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-[#FFFDF8] flex items-center justify-center p-0.5 border border-[#E6DCCB] shadow-2xs">
-                <FaithSyncLogo variant="icon" color="brown" className="w-6 h-6" />
+                <FaithSyncLogo variant="icon" className="w-6 h-6" />
               </div>
               <span className="font-serif font-bold text-base tracking-tight text-[#6B4F2A]">
                 Faith Sync
@@ -113,7 +101,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
           {/* Header */}
           <div className="flex flex-col gap-1.5 text-center items-center">
             <div className="w-12 h-12 rounded-2xl bg-[#F7F1E5] text-[#6B4F2A] border border-[#E6DCCB] flex items-center justify-center mb-1">
-              <FaithSyncLogo variant="icon" color="brown" className="w-8 h-8" />
+              <FaithSyncLogo variant="icon" className="w-8 h-8" />
             </div>
             <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#66805C]/15 text-[#66805C] border border-[#66805C]/30 text-[10px] font-bold uppercase tracking-wider">
               <span>Daily Quiet Time with God</span>
@@ -157,6 +145,16 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
               onChange={e => setEmail(e.target.value)}
               placeholder="e.g. john.mensah@gracechurch.org"
               leftIcon={<span className="material-symbols-outlined text-[18px]">mail</span>}
+            />
+
+            <Input
+              label="Username"
+              type="text"
+              required
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              placeholder="e.g. jordan_lee"
+              leftIcon={<span className="material-symbols-outlined text-[18px]">alternate_email</span>}
             />
 
             <Input
