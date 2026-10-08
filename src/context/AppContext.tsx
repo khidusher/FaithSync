@@ -17,7 +17,7 @@ import { StorageService, getLocalDateKey } from '../services/storage';
 import { BibleService } from '../services/bibleService';
 import { READING_PLANS } from '../data/initialData';
 import { firebaseConfigured } from '../lib/firebase';
-import { registerAccount, sendPasswordReset, signInWithEmail, signOutAccount, subscribeToAuthState } from '../services/authService';
+import { registerAccount, sendPasswordReset, signInWithEmail, signInWithGoogle as signInWithGoogleAccount, signOutAccount, subscribeToAuthState } from '../services/authService';
 import { shareCompletion as shareCompletionToCircle, unshareCompletion as unshareCompletionFromCircle } from '../services/socialService';
 
 export type TabType =
@@ -63,6 +63,7 @@ interface AppContextType {
   // Auth & Onboarding
   setCurrentTab: (tab: TabType) => void;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   signup: (userData: {
     firstName: string;
@@ -224,6 +225,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Auth operations
 const login = async (email: string, password = ''): Promise<void> => {
   await signInWithEmail(email, password);
+};
+
+const loginWithGoogle = async (): Promise<void> => {
+  await signInWithGoogleAccount();
 };
 
 const signup = async (userData: {
@@ -638,6 +643,7 @@ const logout = async () => {
         justCompletedData,
         setCurrentTab,
         login,
+        loginWithGoogle,
         sendPasswordReset,
         signup,
         logout,

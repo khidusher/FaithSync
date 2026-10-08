@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { FaithSyncLogo } from '../common/FaithSyncLogo';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
+import { GoogleSignInButton } from './GoogleSignInButton';
 import { validateName, validateEmail, validatePassword } from '../../utils/validation';
 
 interface SignUpViewProps {
@@ -14,7 +15,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
   onSwitchToLogin,
   onBack
 }) => {
-  const { signup } = useApp();
+  const { signup, loginWithGoogle } = useApp();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -23,6 +24,7 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,6 +65,18 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
       setErrorMessage(error instanceof Error ? error.message : 'Unable to create your account. Please try again.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setErrorMessage('');
+    setIsGoogleLoading(true);
+    try {
+      await loginWithGoogle();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to continue with Google. Please try again.');
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -124,6 +138,15 @@ export const SignUpView: React.FC<SignUpViewProps> = ({
               <span>{errorMessage}</span>
             </div>
           )}
+
+          <GoogleSignInButton onClick={handleGoogleSignIn} isLoading={isGoogleLoading} />
+
+          <div className="relative flex items-center justify-center">
+            <div className="w-full h-px bg-[#E6DCCB]"></div>
+            <span className="absolute bg-[#FFFDF8] px-3 text-[10px] text-[#766F67] tracking-wider uppercase font-semibold">
+              or sign up with email
+            </span>
+          </div>
 
           {/* Registration Form */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
